@@ -28,6 +28,9 @@ Of course you can modify the complete program `app.coffee`, but first let me sho
 ## Background
 In every update interval, the program makes a snapshot of the usage of all processes in percent and calculates a sum for both, cpu and memory. For the displayed cpu usage, the sum of the process cpu usage must be divided through the number of logical cpu cores. The reason is: one process can have more than 100 percent of usage, but not more than the number of logical cpu cores multiplied by 100. All other values will be displayed without major calculation.
 
+## Changelog
+* 1.1
+  * Performance improved
 
 ## License
 `uebersicht-sys-monitor` is available under the MIT license. Copyright (c) 2015 Kevin Porten
