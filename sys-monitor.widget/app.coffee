@@ -1,4 +1,4 @@
-command: "ps aux | awk '{cpu+=$3;mem+=$4} END {print cpu;print mem}'; sysctl -n hw.logicalcpu; sysctl -n hw.memsize"
+command: "ps aux | awk '{cpu+=$3;mem+=$4} END {print cpu;print mem}'"
 
 refreshFrequency: 1000
 
@@ -19,6 +19,10 @@ render: (output) -> """
 
 chart: null
 
+sysctl:
+  logicalcpu: 0
+  memsize: 0
+
 getTime: -> new Date().getTime() / 1000
 
 afterRender: (domEl) ->
@@ -26,6 +30,8 @@ afterRender: (domEl) ->
     $.getScript "sys-monitor.widget/lib/epoch/epoch.min.js.lib", =>
       @chart = $(domEl).find('#chart').epoch
         type: 'time.line'
+        fps: 20
+        queueSize: 120
         axes: ['bottom', 'right', 'left']
         tickFormats:
           bottom: (value) ->
@@ -44,23 +50,27 @@ afterRender: (domEl) ->
     model = stdout.match(/Model Name: ([,\.0-9a-z ]+)/i)[1]
     $(domEl).find('#model').text(model)
     
-    @run "sysctl -n machdep.cpu.brand_string", (err, stdout) ->
-      $(domEl).find('#processor').text(stdout)
+    @run "sysctl -n machdep.cpu.brand_string; sysctl -n hw.logicalcpu; sysctl -n hw.memsize", (err, stdout) =>
+      [cpubrand, logicalcpu, memsize] = stdout.split("\n")
+      @sysctl.logicalcpu = logicalcpu
+      @sysctl.memsize = memsize
+      $(domEl).find('#processor').text(cpubrand)
 
 update: (output, domEl) ->
-  [cpu, mem, cpu_cores, mem_size] = output.split("\n")
-  mem_per = parseFloat(mem)
-  cpu_per = cpu / cpu_cores
-  mem_gb = mem_size / 1024 / 1024 / 1024
-  mem_occ = (mem_per / 100) * mem_gb
-  
-  $(domEl).find('#cpu').text("#{cpu_per.toFixed(2)} %")
-  $(domEl).find('#mem').text("#{mem_per.toFixed(2)} % / #{mem_occ.toFixed(2)} GB / #{mem_gb.toFixed(2)} GB")
-
-  @chart.push([
-    {time: @getTime(), y: cpu_per}
-    {time: @getTime(), y: mem_per}
-  ]) if @chart?
+  if @sysctl.logicalcpu > 0 and @sysctl.memsize > 0
+    [cpu, mem] = output.split("\n")
+    mem_per = parseFloat(mem)
+    cpu_per = cpu / @sysctl.logicalcpu
+    mem_gb = @sysctl.memsize / 1024 / 1024 / 1024
+    mem_occ = (mem_per / 100) * mem_gb
+    
+    $(domEl).find('#cpu').text("#{cpu_per.toFixed(2)} %")
+    $(domEl).find('#mem').text("#{mem_per.toFixed(2)} % / #{mem_occ.toFixed(2)} GB / #{mem_gb.toFixed(2)} GB")
+    
+    @chart.push([
+      {time: @getTime(), y: cpu_per}
+      {time: @getTime(), y: mem_per}
+    ]) if @chart?
   
 style: """
   top: 20px
