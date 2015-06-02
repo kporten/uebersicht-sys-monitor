@@ -51,9 +51,7 @@ afterRender: (domEl) ->
     $(domEl).find('#model').text(model)
     
     @run "sysctl -n machdep.cpu.brand_string; sysctl -n hw.logicalcpu; sysctl -n hw.memsize", (err, stdout) =>
-      [cpubrand, logicalcpu, memsize] = stdout.split("\n")
-      @sysctl.logicalcpu = logicalcpu
-      @sysctl.memsize = memsize
+      [cpubrand, @sysctl.logicalcpu, @sysctl.memsize] = stdout.split("\n")
       $(domEl).find('#processor').text(cpubrand)
 
 update: (output, domEl) ->
