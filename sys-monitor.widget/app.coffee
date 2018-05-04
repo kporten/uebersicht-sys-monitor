@@ -45,11 +45,11 @@ afterRender: (domEl) ->
           {label: 'CPU', values: [{time: @getTime(), y: 0}]}
           {label: 'MEM', values: [{time: @getTime(), y: 0}]}
         ]
-  
+
   @run "system_profiler SPHardwareDataType", (err, stdout) =>
     model = stdout.match(/Model Name: ([,\.0-9a-z ]+)/i)[1]
     $(domEl).find('#model').text(model)
-    
+
     @run "sysctl -n machdep.cpu.brand_string; sysctl -n hw.logicalcpu; sysctl -n hw.memsize", (err, stdout) =>
       [cpubrand, @sysctl.logicalcpu, @sysctl.memsize] = stdout.split("\n")
       $(domEl).find('#processor').text(cpubrand)
@@ -58,50 +58,51 @@ update: (output, domEl) ->
   if @sysctl.logicalcpu > 0 and @sysctl.memsize > 0
     [cpu, mem] = output.split("\n")
     mem_per = parseFloat(mem)
+    mem_per = 100 if mem_per > 100
     cpu_per = cpu / @sysctl.logicalcpu
     mem_gb = @sysctl.memsize / 1024 / 1024 / 1024
     mem_occ = (mem_per / 100) * mem_gb
-    
+
     $(domEl).find('#cpu').text("#{cpu_per.toFixed(2)} %")
     $(domEl).find('#mem').text("#{mem_per.toFixed(2)} % / #{mem_occ.toFixed(2)} GB / #{mem_gb.toFixed(2)} GB")
-    
+
     @chart.push([
       {time: @getTime(), y: cpu_per}
       {time: @getTime(), y: mem_per}
     ]) if @chart?
-  
+
 style: """
   top: 20px
   left: 20px
 
   *
     box-sizing: border-box
-  
+
   #sys-monitor
     font-family: "Helvetica Neue"
     font-weight: 300
     font-size: 14px
     border-radius: 5px
     padding: 15px
-    
+
     &.light
       background: rgba(255, 255, 255, .6)
       color: lighten(#000, 10%)
-      
+
     &.dark
       background: rgba(0, 0, 0, .6)
       color: darken(#fff, 10%)
-      
+
     #chart
       margin-top: 15px
       height: 200px
-      
+
     ul
       list-style: none
       margin: 0 0 5px 0
       padding: 0
       overflow: hidden
-      
+
       li:first-child
         float: left
         width: 200px
@@ -109,11 +110,11 @@ style: """
         float: right
         width: 300px
         text-align: right
-        
+
       &.primary
         li:last-child
           font-size: 10px
-          
+
       &.secondary
         li
           font-size: 10px
